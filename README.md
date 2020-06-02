@@ -1,7 +1,7 @@
 # temp-unit
 Temperature and humidity reader unit on ESP8266 + DHT11
 
-Looks like this:
+All together looks like this:
 
 ![94e9aa43e01dab39](https://user-images.githubusercontent.com/347098/83553224-cf9e5800-a502-11ea-8d09-b187b2867581.jpg)
 
