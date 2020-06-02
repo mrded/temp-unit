@@ -14,6 +14,8 @@ const char* IO_USERNAME = "USERNAME";
 const char* IO_TEMPERATURE_KEY = "temp";
 const char* IO_HUMIDITY_KEY = "humidity";
 
+bool splitFlag = true;
+
 DHT dht(DHTPIN, DHTTYPE, 11);
 
 void setup(void) {
@@ -27,7 +29,7 @@ void setup(void) {
     Serial.print(".");
   }
 
-  Serial.println("DHT Weather Reading Unit");
+  Serial.println("OK");
   Serial.print("Connected to ");
   Serial.println(ssid);
   Serial.print("IP address: ");
@@ -35,19 +37,24 @@ void setup(void) {
 }
 
 void loop(void) {
-  if ((WiFi.status() == WL_CONNECTED)) {
-    float temp_c = dht.readTemperature(false);
-    float humidity = dht.readHumidity();   
+  if (WiFi.status() != WL_CONNECTED) return;
 
-    sendTemperature(temp_c);
-    sendHumidity(humidity);
+  if (splitFlag) {
+    sendTemperature(dht.readTemperature(false));
+  }
+  else {
+    sendHumidity(dht.readHumidity());
   }
 
-  // 1 hour delay
-  delay(60UL * 60UL * 1000UL);
+  splitFlag = !splitFlag;
+
+  // 30 sec delay
+  delay(30UL * 1000UL);
 }
 
 void sendTemperature(float temp_c) {
+  if (isnan(temp_c) || temp_c < 0) return;
+
   WiFiClient client;
   HTTPClient http;
 
@@ -59,6 +66,8 @@ void sendTemperature(float temp_c) {
 }
 
 void sendHumidity(float humidity) {
+  if (isnan(humidity)) return;
+
   WiFiClient client;
   HTTPClient http; 
 
