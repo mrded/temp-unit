@@ -31,3 +31,10 @@ Everything can be found on aliexpress.
 - [DHT Sensor Library](https://github.com/adafruit/DHT-sensor-library)
 
 Plug everything in, choose a ESP8266 board, connected port, compile and upload! 
+
+## TODO:
+- [X] Temperature and humidity reader unit
+- [ ] Use better Bosch Sensortec BME280 [.](http://www.kandrsmith.org/RJS/Misc/Hygrometers/calib_many.html)
+- [ ] Air Pressure reader unit
+- [ ] CO2 reader unit
+- [ ] Noise pollution reader unit
