@@ -36,5 +36,6 @@ Plug everything in, choose a ESP8266 board, connected port, compile and upload!
 - [X] Temperature and humidity reader unit
 - [ ] Use better Bosch Sensortec BME280 [.](http://www.kandrsmith.org/RJS/Misc/Hygrometers/calib_many.html)
 - [ ] Air Pressure reader unit
-- [ ] CO2 reader unit
+- [ ] CO2 reader unit (MH-Z19 or SCD30)
+- [ ] VOC reader unit (SGP30)
 - [ ] Noise pollution reader unit
