@@ -2,27 +2,22 @@
 #include <WiFiClient.h>
 #include <ESP8266HTTPClient.h>
 #include <DHT.h>
-#define DHTTYPE DHT11
+#define DHTTYPE DHT22 // DHT11 | DHT22
 #define DHTPIN 2
 
 const char* ssid = "your-ssid";
 const char* password = "your-wifi-password";
 
-//@see: https://io.adafruit.com
-const char* IO_KEY = "ADAFRUIT IO KEY";
-const char* IO_USERNAME = "USERNAME";
-const char* IO_TEMPERATURE_KEY = "temp";
-const char* IO_HUMIDITY_KEY = "humidity";
-
 bool splitFlag = true;
 
-DHT dht(DHTPIN, DHTTYPE, 11);
+DHT dht(DHTPIN, DHTTYPE);
 
 void setup(void) {
   Serial.begin(115200);
   dht.begin();
 
   WiFi.begin(ssid, password);
+  WiFi.softAPdisconnect(true);
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -40,10 +35,12 @@ void loop(void) {
   if (WiFi.status() != WL_CONNECTED) return;
 
   if (splitFlag) {
-    sendTemperature(dht.readTemperature(false));
+    float temperature = dht.readTemperature(false);
+    sendData("temperature", temperature);
   }
   else {
-    sendHumidity(dht.readHumidity());
+    float humidity = dht.readHumidity();
+    sendData("humidity", humidity);
   }
 
   splitFlag = !splitFlag;
@@ -52,28 +49,18 @@ void loop(void) {
   delay(30UL * 1000UL);
 }
 
-void sendTemperature(float temp_c) {
-  if (isnan(temp_c) || temp_c < 0) return;
+void sendData(String measurement, float value) {
+  if (isnan(value) || value < 0) return;
 
   WiFiClient client;
   HTTPClient http;
 
-  http.begin(client, "http://io.adafruit.com/api/v2/" + String(IO_USERNAME) + "/feeds/" + String(IO_TEMPERATURE_KEY) +"/data");
+  http.begin(client, "http://node-red.local/readings");
   http.addHeader("Content-Type", "application/json");
-  http.addHeader("X-AIO-Key", IO_KEY);
-  http.POST("{\"datum\":{\"value\":\"" + String((int)temp_c) + "\"}}");
-  http.end();
-}
 
-void sendHumidity(float humidity) {
-  if (isnan(humidity)) return;
-
-  WiFiClient client;
-  HTTPClient http; 
-
-  http.begin(client, "http://io.adafruit.com/api/v2/" + String(IO_USERNAME) + "/feeds/" + String(IO_HUMIDITY_KEY) + "/data");
-  http.addHeader("Content-Type", "application/json");
-  http.addHeader("X-AIO-Key", IO_KEY);
-  http.POST("{\"datum\":{\"value\":\"" + String((int)humidity) + "\"}}");
+  http.addHeader("measurement", String(measurement));
+  http.addHeader("value", String(value));
+  http.addHeader("unit", String(WiFi.macAddress()));
+  http.POST("");
   http.end();
 }
