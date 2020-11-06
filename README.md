@@ -1,5 +1,5 @@
 # temp-unit
-Temperature and humidity reader unit on ESP8266 + DHT11
+Temperature and humidity reader unit on ESP8266 + DHT11 || DHT22
 
 All together looks like this:
 
@@ -13,7 +13,7 @@ It sends temperature and humidity readings over HTTP, so it can be collected and
 ### ESP8266 ESP-01 or ESP-01S
 ![ESP8266 ESP-01 or ESP-01S](https://user-images.githubusercontent.com/347098/83556426-c663ba00-a507-11ea-9a6f-1abed942dff8.jpg)
 
-### DHT11 Temperature and humidity sensor
+### DHT11 or DHT22 temperature and humidity sensor
 ![DHT11](https://user-images.githubusercontent.com/347098/83556502-ef844a80-a507-11ea-8f1c-3e142b1d71a6.png)
 
 ### ESP8266 Programmer CH340G
