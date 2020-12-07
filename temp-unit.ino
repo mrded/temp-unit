@@ -1,6 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
-#include <ESP8266HTTPClient.h>
+#include <ESP8266WebServer.h>
 #include <DHT.h>
 #define DHTTYPE DHT22 // DHT11 | DHT22
 #define DHTPIN 2
@@ -8,9 +8,9 @@
 const char* ssid = "your-ssid";
 const char* password = "your-wifi-password";
 
-bool splitFlag = true;
-
 DHT dht(DHTPIN, DHTTYPE);
+
+ESP8266WebServer server(80);
 
 void setup(void) {
   Serial.begin(115200);
@@ -25,42 +25,45 @@ void setup(void) {
   }
 
   Serial.println("OK");
-  Serial.print("Connected to ");
+  
+  Serial.print("MAC address: ");
+  Serial.println(WiFi.macAddress());
+  
+  Serial.print("Connected to: ");
   Serial.println(ssid);
+  
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
+
+  server.on("/", handleMetrics);
+  server.on("/metrics", handleMetrics);
+  server.onNotFound(handleNotFound);
+  server.begin();
+  
+  Serial.println("HTTP server is ready!");
 }
 
 void loop(void) {
   if (WiFi.status() != WL_CONNECTED) return;
 
-  if (splitFlag) {
-    float temperature = dht.readTemperature(false);
-    sendData("temperature", temperature);
-  }
-  else {
-    float humidity = dht.readHumidity();
-    sendData("humidity", humidity);
-  }
-
-  splitFlag = !splitFlag;
-
-  // 30 sec delay
-  delay(30UL * 1000UL);
+  server.handleClient();
 }
 
-void sendData(String measurement, float value) {
-  if (isnan(value) || value < 0) return;
+void handleNotFound() {
+  server.send(404, "text/plain", "Not found");
+}
 
-  WiFiClient client;
-  HTTPClient http;
+void handleMetrics() {
+  String metrics;
 
-  http.begin(client, "http://node-red.local/readings");
-  http.addHeader("Content-Type", "application/json");
+  float temperature = dht.readTemperature(false);
+  float humidity = dht.readHumidity();
 
-  http.addHeader("measurement", String(measurement));
-  http.addHeader("value", String(value));
-  http.addHeader("unit", String(WiFi.macAddress()));
-  http.POST("");
-  http.end();
+  if (isnan(temperature) || temperature < 0) return;
+  if (isnan(humidity) || humidity < 0) return;
+  
+  metrics += "dht_temperature_celsius_raw_value " + String(temperature) + "\n";
+  metrics += "dht_humidity_percentage_raw_value " + String(humidity) + "\n";
+
+  server.send(200, "text/plain", metrics); 
 }
