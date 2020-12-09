@@ -53,15 +53,21 @@ void handleNotFound() {
   server.send(404, "text/plain", "Not found");
 }
 
+float temperature = 0;
+float humidity = 0;
+
 void handleMetrics() {
   String metrics;
 
-  float temperature = dht.readTemperature(false);
-  float humidity = dht.readHumidity();
+  float newTemperature = dht.readTemperature(false);
+  float newHumidity = dht.readHumidity();
 
-  if (isnan(temperature) || isnan(humidity) || temperature < 0 || humidity < 0) {
-    server.send(500, "text/plain", "Problem with readings");
-    return;
+  if (!isnan(newTemperature) && newTemperature > 0) {
+    temperature = newTemperature;
+  }
+
+  if (!isnan(newHumidity) && newHumidity > 0) {
+    humidity = newHumidity;
   }
   
   metrics += "dht_temperature_celsius_raw_value " + String(temperature) + "\n";
