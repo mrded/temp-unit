@@ -59,11 +59,13 @@ void handleMetrics() {
   float temperature = dht.readTemperature(false);
   float humidity = dht.readHumidity();
 
-  if (isnan(temperature) || temperature < 0) return;
-  if (isnan(humidity) || humidity < 0) return;
+  if (isnan(temperature) || isnan(humidity) || temperature < 0 || humidity < 0) {
+    server.send(500, "text/plain", "Problem with readings");
+    return;
+  }
   
   metrics += "dht_temperature_celsius_raw_value " + String(temperature) + "\n";
   metrics += "dht_humidity_percentage_raw_value " + String(humidity) + "\n";
 
-  server.send(200, "text/plain", metrics); 
+  server.send(200, "text/plain", metrics);
 }
