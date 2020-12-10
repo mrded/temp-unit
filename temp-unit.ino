@@ -56,20 +56,34 @@ void handleNotFound() {
 float temperature = 0;
 float humidity = 0;
 
+bool splitFlag = true;
+
+float getTemperature() {
+  float newValue = dht.readTemperature(false);
+
+  return (!isnan(newValue) && newValue > 0) 
+    ? newValue : temperature;
+}
+
+float getHumidity() {
+  float newValue = dht.readHumidity();
+
+  return (!isnan(newValue) && newValue > 0) 
+    ? newValue : humidity;
+}
+
 void handleMetrics() {
   String metrics;
 
-  float newTemperature = dht.readTemperature(false);
-  float newHumidity = dht.readHumidity();
-
-  if (!isnan(newTemperature) && newTemperature > 0) {
-    temperature = newTemperature;
+  if (splitFlag) {
+    temperature = getTemperature();
+  }
+  else {
+    humidity = getHumidity();
   }
 
-  if (!isnan(newHumidity) && newHumidity > 0) {
-    humidity = newHumidity;
-  }
-  
+  splitFlag = !splitFlag;
+ 
   metrics += "dht_temperature_celsius_raw_value " + String(temperature) + "\n";
   metrics += "dht_humidity_percentage_raw_value " + String(humidity) + "\n";
 
