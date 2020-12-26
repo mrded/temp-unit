@@ -12,12 +12,21 @@ DHT dht(DHTPIN, DHTTYPE);
 
 ESP8266WebServer server(80);
 
+float temperature = 0;
+float humidity = 0;
+
+bool splitFlag = true;
+
+String macAddress;
+
 void setup(void) {
   Serial.begin(115200);
   dht.begin();
 
   WiFi.begin(ssid, password);
   WiFi.softAPdisconnect(true);
+
+  macAddress = String(WiFi.macAddress());
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -27,7 +36,7 @@ void setup(void) {
   Serial.println("OK");
   
   Serial.print("MAC address: ");
-  Serial.println(WiFi.macAddress());
+  Serial.println(macAddress);
   
   Serial.print("Connected to: ");
   Serial.println(ssid);
@@ -52,11 +61,6 @@ void loop(void) {
 void handleNotFound() {
   server.send(404, "text/plain", "Not found");
 }
-
-float temperature = 0;
-float humidity = 0;
-
-bool splitFlag = true;
 
 float getTemperature() {
   float newValue = dht.readTemperature(false);
@@ -83,9 +87,11 @@ void handleMetrics() {
   }
 
   splitFlag = !splitFlag;
+
+  String labels = "{device_mac_address=\"" + macAddress + "\"}";
  
-  metrics += "dht_temperature_celsius_raw_value " + String(temperature) + "\n";
-  metrics += "dht_humidity_percentage_raw_value " + String(humidity) + "\n";
+  metrics += "dht_temperature_celsius_raw_value" + labels + " " + String(temperature) + "\n";
+  metrics += "dht_humidity_percentage_raw_value" + labels + " " + String(humidity) + "\n";
 
   server.send(200, "text/plain", metrics);
 }
