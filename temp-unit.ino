@@ -1,27 +1,22 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
-#include <DHT.h>
-#define DHTTYPE DHT22 // DHT11 | DHT22
-#define DHTPIN 2
 
 const char* ssid = "your-ssid";
 const char* password = "your-wifi-password";
+#include <DS18B20.h>
 
-DHT dht(DHTPIN, DHTTYPE);
+
+DS18B20 ds(2);
 
 ESP8266WebServer server(80);
 
 float temperature = 0;
-float humidity = 0;
-
-bool splitFlag = true;
 
 String macAddress;
 
 void setup(void) {
   Serial.begin(115200);
-  dht.begin();
 
   WiFi.begin(ssid, password);
   WiFi.softAPdisconnect(true);
@@ -63,35 +58,20 @@ void handleNotFound() {
 }
 
 float getTemperature() {
-  float newValue = dht.readTemperature(false);
+  float newValue = ds.getTempC();
 
   return (!isnan(newValue) && newValue > 0) 
     ? newValue : temperature;
 }
 
-float getHumidity() {
-  float newValue = dht.readHumidity();
-
-  return (!isnan(newValue) && newValue > 0) 
-    ? newValue : humidity;
-}
-
 void handleMetrics() {
   String metrics;
 
-  if (splitFlag) {
-    temperature = getTemperature();
-  }
-  else {
-    humidity = getHumidity();
-  }
-
-  splitFlag = !splitFlag;
+  temperature = getTemperature();
 
   String labels = "{device_mac_address=\"" + macAddress + "\"}";
  
-  metrics += "dht_temperature_celsius_raw_value" + labels + " " + String(temperature) + "\n";
-  metrics += "dht_humidity_percentage_raw_value" + labels + " " + String(humidity) + "\n";
+  metrics += "ds18b20_temperature_celsius_raw_value" + labels + " " + String(temperature) + "\n";
 
   server.send(200, "text/plain", metrics);
 }
