@@ -1,6 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
-#include <ESP8266HTTPClient.h>
+#include <ESP8266WebServer.h>
 #include <DHT.h>
 #define DHTTYPE DHT22 // DHT11 | DHT22
 #define DHTPIN 2
@@ -8,9 +8,16 @@
 const char* ssid = "your-ssid";
 const char* password = "your-wifi-password";
 
+DHT dht(DHTPIN, DHTTYPE);
+
+ESP8266WebServer server(80);
+
+float temperature = 0;
+float humidity = 0;
+
 bool splitFlag = true;
 
-DHT dht(DHTPIN, DHTTYPE);
+String macAddress;
 
 void setup(void) {
   Serial.begin(115200);
@@ -19,48 +26,72 @@ void setup(void) {
   WiFi.begin(ssid, password);
   WiFi.softAPdisconnect(true);
 
+  macAddress = String(WiFi.macAddress());
+
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
 
   Serial.println("OK");
-  Serial.print("Connected to ");
+  
+  Serial.print("MAC address: ");
+  Serial.println(macAddress);
+  
+  Serial.print("Connected to: ");
   Serial.println(ssid);
+  
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
+
+  server.on("/", handleMetrics);
+  server.on("/metrics", handleMetrics);
+  server.onNotFound(handleNotFound);
+  server.begin();
+  
+  Serial.println("HTTP server is ready!");
 }
 
 void loop(void) {
   if (WiFi.status() != WL_CONNECTED) return;
 
+  server.handleClient();
+}
+
+void handleNotFound() {
+  server.send(404, "text/plain", "Not found");
+}
+
+float getTemperature() {
+  float newValue = dht.readTemperature(false);
+
+  return (!isnan(newValue) && newValue > 0) 
+    ? newValue : temperature;
+}
+
+float getHumidity() {
+  float newValue = dht.readHumidity();
+
+  return (!isnan(newValue) && newValue > 0) 
+    ? newValue : humidity;
+}
+
+void handleMetrics() {
+  String metrics;
+
   if (splitFlag) {
-    float temperature = dht.readTemperature(false);
-    sendData("temperature", temperature);
+    temperature = getTemperature();
   }
   else {
-    float humidity = dht.readHumidity();
-    sendData("humidity", humidity);
+    humidity = getHumidity();
   }
 
   splitFlag = !splitFlag;
 
-  // 30 sec delay
-  delay(30UL * 1000UL);
-}
+  String labels = "{device_mac_address=\"" + macAddress + "\"}";
+ 
+  metrics += "dht_temperature_celsius_raw_value" + labels + " " + String(temperature) + "\n";
+  metrics += "dht_humidity_percentage_raw_value" + labels + " " + String(humidity) + "\n";
 
-void sendData(String measurement, float value) {
-  if (isnan(value) || value < 0) return;
-
-  WiFiClient client;
-  HTTPClient http;
-
-  http.begin(client, "http://node-red.local/readings");
-  http.addHeader("Content-Type", "application/json");
-
-  http.addHeader("measurement", String(measurement));
-  http.addHeader("value", String(value));
-  http.addHeader("unit", String(WiFi.macAddress()));
-  http.POST("");
-  http.end();
+  server.send(200, "text/plain", metrics);
 }
